@@ -350,8 +350,9 @@ def consolidate():
         flash(f"Nenhum dado valido foi encontrado para consolidar em {PLAN_LABELS[plan_type]}.", "error")
         return _admin_redirect(view_name="dashboard", **filters)
 
-    output_name = f"{OUTPUT_BASENAMES[plan_type]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-    output_path = settings.output_dir / output_name
+    output_name = f"{OUTPUT_BASENAMES[plan_type]}.xlsx"
+    stored_output_name = f"{OUTPUT_BASENAMES[plan_type]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    output_path = settings.output_dir / stored_output_name
     try:
         stored_output_path = write_consolidation_output_for_storage(
             result,

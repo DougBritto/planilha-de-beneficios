@@ -8,8 +8,8 @@ PLAN_LABELS = {
 }
 
 OUTPUT_BASENAMES = {
-    "saude": "consolidado_saude",
-    "odonto": "consolidado_odonto",
+    "saude": "REMESSA PLANILHA UNIMED SAUDE",
+    "odonto": "REMESSA PLANILHA UNIMED ODONTO",
 }
 
 MAIN_SHEET_NAMES = {
