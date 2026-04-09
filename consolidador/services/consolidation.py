@@ -4,6 +4,7 @@ import shutil
 import tempfile
 import re
 import unicodedata
+from datetime import date, datetime
 from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
@@ -129,6 +130,19 @@ def excel_safe_value(value: object) -> object:
     return value
 
 
+def _clean_text(value: object) -> str:
+    return re.sub(r"\s+", " ", str(value)).strip()
+
+
+def _strip_accents(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value)
+    return "".join(character for character in normalized if not unicodedata.combining(character))
+
+
+def _clean_upper_text(value: object) -> str:
+    return _strip_accents(_clean_text(value)).upper()
+
+
 def canonical_cell_value(value: object) -> str:
     if pd.isna(value):
         return ""
@@ -144,6 +158,185 @@ def fold_text(value: object) -> str:
     folded = unicodedata.normalize("NFKD", text)
     folded = "".join(character for character in folded if not unicodedata.combining(character))
     return folded.lower()
+
+
+def is_date_like_header(header: str) -> bool:
+    folded = fold_text(header)
+    return any(
+        token in folded
+        for token in (
+            "data",
+            "nascimento",
+            "admiss",
+            "emissao",
+            "vigencia",
+            "vencimento",
+            "inclusao",
+            "exclusao",
+        )
+    )
+
+
+def is_sex_like_header(header: str) -> bool:
+    folded = fold_text(header)
+    return "sexo" in folded
+
+
+def is_cpf_like_header(header: str) -> bool:
+    folded = fold_text(header)
+    return folded == "cpf" or "cpf" in folded
+
+
+def is_cep_like_header(header: str) -> bool:
+    folded = fold_text(header)
+    return "cep" in folded
+
+
+def is_phone_like_header(header: str) -> bool:
+    folded = fold_text(header)
+    return any(token in folded for token in ("telefone", "celular", "fone", "whatsapp", "contato"))
+
+
+def is_cns_like_header(header: str) -> bool:
+    folded = fold_text(header)
+    return folded == "cns" or "cartao nacional de saude" in folded
+
+
+def is_rg_like_header(header: str) -> bool:
+    folded = fold_text(header)
+    return folded == "rg" or "identidade" in folded or "emissao rg" in folded
+
+
+def format_date_output(value: object) -> object:
+    if pd.isna(value):
+        return pd.NA
+
+    if isinstance(value, pd.Timestamp):
+        return value.strftime("%d/%m/%Y")
+
+    if isinstance(value, datetime):
+        return value.strftime("%d/%m/%Y")
+
+    if isinstance(value, date):
+        return value.strftime("%d/%m/%Y")
+
+    text = _clean_text(value)
+    if not text:
+        return pd.NA
+
+    parsed = pd.to_datetime(text, errors="coerce", dayfirst=True)
+    if pd.isna(parsed):
+        return _clean_upper_text(text)
+    return parsed.strftime("%d/%m/%Y")
+
+
+def format_sex_output(value: object) -> object:
+    if pd.isna(value):
+        return pd.NA
+
+    folded = fold_text(value)
+    if not folded:
+        return pd.NA
+    if folded in {"m", "masc", "masculino", "male"}:
+        return "M"
+    if folded in {"f", "fem", "feminino", "female"}:
+        return "F"
+    return _clean_upper_text(value)
+
+
+def format_cpf_output(value: object) -> object:
+    if pd.isna(value):
+        return pd.NA
+
+    digits = re.sub(r"\D+", "", _clean_text(value))
+    if len(digits) == 11:
+        return f"{digits[:3]}.{digits[3:6]}.{digits[6:9]}-{digits[9:]}"
+    return _clean_upper_text(value)
+
+
+def format_cep_output(value: object) -> object:
+    if pd.isna(value):
+        return pd.NA
+
+    digits = re.sub(r"\D+", "", _clean_text(value))
+    if len(digits) == 8:
+        return f"{digits[:5]}-{digits[5:]}"
+    return _clean_upper_text(value)
+
+
+def format_phone_output(value: object) -> object:
+    if pd.isna(value):
+        return pd.NA
+
+    digits = re.sub(r"\D+", "", _clean_text(value))
+    if len(digits) == 11:
+        return f"({digits[:2]}) {digits[2:7]}-{digits[7:]}"
+    if len(digits) == 10:
+        return f"({digits[:2]}) {digits[2:6]}-{digits[6:]}"
+    return _clean_upper_text(value)
+
+
+def format_cns_output(value: object) -> object:
+    if pd.isna(value):
+        return pd.NA
+
+    digits = re.sub(r"\D+", "", _clean_text(value))
+    if len(digits) == 15:
+        return digits
+    return _clean_upper_text(value)
+
+
+def format_rg_output(value: object) -> object:
+    if pd.isna(value):
+        return pd.NA
+
+    cleaned = _clean_upper_text(value)
+    if not cleaned:
+        return pd.NA
+
+    compact = re.sub(r"\s+", "", cleaned)
+    if re.fullmatch(r"[0-9X.\-]+", compact):
+        return compact
+    return cleaned
+
+
+def format_generic_output(value: object) -> object:
+    if pd.isna(value):
+        return pd.NA
+    if isinstance(value, (pd.Timestamp, datetime, date)):
+        return format_date_output(value)
+    if isinstance(value, str):
+        cleaned = _clean_upper_text(value)
+        return cleaned if cleaned else pd.NA
+    return value
+
+
+def standardize_output_dataframe(dataframe: pd.DataFrame) -> pd.DataFrame:
+    standardized = dataframe.copy()
+    for column_name in standardized.columns:
+        if is_cpf_like_header(column_name):
+            standardized[column_name] = standardized[column_name].map(format_cpf_output)
+            continue
+        if is_cep_like_header(column_name):
+            standardized[column_name] = standardized[column_name].map(format_cep_output)
+            continue
+        if is_phone_like_header(column_name):
+            standardized[column_name] = standardized[column_name].map(format_phone_output)
+            continue
+        if is_cns_like_header(column_name):
+            standardized[column_name] = standardized[column_name].map(format_cns_output)
+            continue
+        if is_rg_like_header(column_name):
+            standardized[column_name] = standardized[column_name].map(format_rg_output)
+            continue
+        if is_sex_like_header(column_name):
+            standardized[column_name] = standardized[column_name].map(format_sex_output)
+            continue
+        if is_date_like_header(column_name):
+            standardized[column_name] = standardized[column_name].map(format_date_output)
+            continue
+        standardized[column_name] = standardized[column_name].map(format_generic_output)
+    return standardized
 
 
 def build_row_signatures(dataframe: pd.DataFrame) -> set[tuple[str, ...]]:
@@ -630,6 +823,7 @@ def build_consolidated_workbook(
 
     if consolidated_parts:
         consolidated_df = pd.concat(consolidated_parts, ignore_index=True)
+        consolidated_df = standardize_output_dataframe(consolidated_df)
         if remove_duplicates:
             consolidated_df = consolidated_df.drop_duplicates(ignore_index=True)
     else:

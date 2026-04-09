@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
   fileInputs.forEach((fileInput) => {
     const key = fileInput.getAttribute("data-file-input");
     const fileList = document.querySelector(`[data-file-list="${key}"]`);
+    const dropzone = document.querySelector(`[data-dropzone="${key}"]`);
     if (!fileList) {
       return;
     }
@@ -18,14 +19,38 @@ document.addEventListener("DOMContentLoaded", () => {
       const files = Array.from(fileInput.files || []);
       if (!files.length) {
         fileList.textContent = emptyLabel;
+        if (dropzone) {
+          dropzone.setAttribute("data-state", "idle");
+        }
         return;
       }
 
       const labels = files.map((file) => `${file.name} (${Math.round(file.size / 1024)} KB)`);
       fileList.textContent = labels.join(" | ");
+      if (dropzone) {
+        dropzone.setAttribute("data-state", "filled");
+      }
     };
 
     fileInput.addEventListener("change", renderSelectedFiles);
+
+    if (dropzone) {
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.setAttribute("data-state", "active");
+        });
+      });
+
+      ["dragleave", "dragend", "drop"].forEach((eventName) => {
+        dropzone.addEventListener(eventName, () => {
+          const hasFiles = Boolean(fileInput.files && fileInput.files.length);
+          dropzone.setAttribute("data-state", hasFiles ? "filled" : "idle");
+        });
+      });
+    }
+
+    renderSelectedFiles();
   });
 
   selectableTables.forEach((tableWrapper) => {
