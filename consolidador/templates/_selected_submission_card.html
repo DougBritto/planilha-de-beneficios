@@ -1,0 +1,23 @@
+{% if selected_submission %}
+  <section class="surface-card scope-card">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Escopo atual</p>
+        <h2>Lote {{ selected_submission.submission_id }}</h2>
+        <p class="helper-text">
+          {{ selected_submission.file_count }} arquivo(s), {{ selected_submission.total_size_bytes|filesize }},
+          remetente {{ selected_submission.sender_name or (selected_submission.sender_email|mask_email) or "-" }}.
+        </p>
+      </div>
+      <form action="{{ url_for('admin.delete_submission_route', submission_id=selected_submission.submission_id) }}" method="post" class="inline-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="plan_type_filter" value="{{ plan_type_filter }}">
+        <input type="hidden" name="sender_query" value="{{ sender_query }}">
+        <input type="hidden" name="date_from" value="{{ date_from }}">
+        <input type="hidden" name="date_to" value="{{ date_to }}">
+        <input type="hidden" name="return_view" value="{{ active_admin_page }}">
+        <button type="submit" class="danger-button" onclick="return confirm('Excluir todo este lote e seus arquivos?')">Excluir lote</button>
+      </form>
+    </div>
+  </section>
+{% endif %}

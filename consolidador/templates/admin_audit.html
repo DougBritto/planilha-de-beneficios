@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+{% set admin_page_title = "Auditoria simples" %}
+{% set admin_page_lead = "Acompanhe eventos de login, upload, exclusao e consolidacao em uma visao dedicada para conferencias rapidas." %}
+{% include "_admin_page_header.html" %}
+
+{% set filter_action = url_for('admin.audit_page') %}
+{% include "_admin_filters.html" %}
+{% include "_active_filters_card.html" %}
+{% include "_selected_submission_card.html" %}
+
+<section class="surface-card">
+  <div class="panel-heading">
+    <div>
+      <p class="eyebrow">Auditoria simples</p>
+      <h2>Eventos recentes</h2>
+      <p class="helper-text">O recorte abaixo respeita o mesmo protocolo, tipo, busca e periodo informados no filtro.</p>
+    </div>
+  </div>
+
+  {% if recent_audit_logs %}
+    <ul class="audit-list">
+      {% for item in recent_audit_logs %}
+        <li>
+          <strong>{{ item.event_type }}</strong>
+          <span>{{ item.created_at }}{% if item.remote_addr %} | {{ item.remote_addr|mask_ip }}{% endif %}</span>
+          <p>{{ item.details or "-" }}</p>
+          {% if item.submission_id or item.file_name %}
+            <p class="helper-text">
+              {% if item.submission_id %}Protocolo: {{ item.submission_id }}{% endif %}
+              {% if item.submission_id and item.file_name %} | {% endif %}
+              {% if item.file_name %}Arquivo: {{ item.file_name }}{% endif %}
+            </p>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty-state">Nenhum evento registrado ainda para este recorte.</p>
+  {% endif %}
+</section>
+{% endblock %}

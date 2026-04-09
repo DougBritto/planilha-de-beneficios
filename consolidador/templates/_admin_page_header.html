@@ -1,0 +1,30 @@
+<section class="dashboard-header">
+  <div>
+    <p class="eyebrow">{{ admin_page_eyebrow or "Operacao administrativa" }}</p>
+    <h1>{{ admin_page_title }}</h1>
+    <p class="lead">{{ admin_page_lead }}</p>
+  </div>
+  <div class="admin-header-actions">
+    <nav class="section-nav" aria-label="Navegacao administrativa">
+      <a
+        class="section-link {{ 'section-link-active' if active_admin_page == 'dashboard' else '' }}"
+        href="{{ url_for('admin.dashboard', plan_type_filter=plan_type_filter, submission_id=selected_submission_id, sender_query=sender_query, date_from=date_from, date_to=date_to) }}"
+      >
+        Painel
+      </a>
+      <a
+        class="section-link {{ 'section-link-active' if active_admin_page == 'uploads' else '' }}"
+        href="{{ url_for('admin.uploads_page', plan_type_filter=plan_type_filter, submission_id=selected_submission_id, sender_query=sender_query, date_from=date_from, date_to=date_to) }}"
+      >
+        Arquivos recebidos
+      </a>
+      <a
+        class="section-link {{ 'section-link-active' if active_admin_page == 'audit' else '' }}"
+        href="{{ url_for('admin.audit_page', plan_type_filter=plan_type_filter, submission_id=selected_submission_id, sender_query=sender_query, date_from=date_from, date_to=date_to) }}"
+      >
+        Auditoria simples
+      </a>
+    </nav>
+    <a class="ghost-link" href="{{ url_for('admin.logout') }}">Encerrar sessao</a>
+  </div>
+</section>

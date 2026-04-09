@@ -1,0 +1,380 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="dashboard-header">
+  <div>
+    <p class="eyebrow">Operacao administrativa</p>
+    <h1>Painel de consolidacao</h1>
+    <p class="lead">Acompanhe recebimentos, gere o consolidado e mantenha um historico simples para operacao inicial em producao.</p>
+  </div>
+  <a class="ghost-link" href="{{ url_for('admin.logout') }}">Encerrar sessao</a>
+</section>
+
+<section class="stats-grid">
+  <article class="stat-card">
+    <span class="stat-label">Submissoes</span>
+    <strong>{{ stats.total_submissions }}</strong>
+    <small>Lotes recebidos</small>
+  </article>
+  <article class="stat-card">
+    <span class="stat-label">Arquivos Saude</span>
+    <strong>{{ stats.total_saude_files }}</strong>
+    <small>Total armazenado</small>
+  </article>
+  <article class="stat-card">
+    <span class="stat-label">Arquivos Odonto</span>
+    <strong>{{ stats.total_odonto_files }}</strong>
+    <small>Total armazenado</small>
+  </article>
+  <article class="stat-card">
+    <span class="stat-label">Consolidados</span>
+    <strong>{{ stats.total_outputs }}</strong>
+    <small>{{ stats.total_files }} arquivo(s) recebidos no total</small>
+  </article>
+</section>
+
+<section class="surface-card toolbar-card">
+  <div class="panel-heading">
+    <div>
+      <p class="eyebrow">Operacao assistida</p>
+      <h2>Filtrar e organizar o painel</h2>
+    </div>
+  </div>
+  <form action="{{ url_for('admin.dashboard') }}" method="get" class="form-grid compact-form">
+    <label>
+      Tipo
+      <select name="plan_type_filter">
+        <option value="" {{ "selected" if not plan_type_filter else "" }}>Todos</option>
+        <option value="saude" {{ "selected" if plan_type_filter == "saude" else "" }}>Saude</option>
+        <option value="odonto" {{ "selected" if plan_type_filter == "odonto" else "" }}>Odonto</option>
+      </select>
+    </label>
+    <label>
+      Protocolo
+      <input type="text" name="submission_id" value="{{ selected_submission_id }}" placeholder="Ex.: a7cf9bc1bd">
+    </label>
+    <label>
+      Remetente ou arquivo
+      <input type="text" name="sender_query" value="{{ sender_query }}" placeholder="Nome, e-mail ou arquivo">
+    </label>
+    <label>
+      De
+      <input type="date" name="date_from" value="{{ date_from }}">
+    </label>
+    <label>
+      Ate
+      <input type="date" name="date_to" value="{{ date_to }}">
+    </label>
+    <div class="form-actions">
+      <button type="submit">Aplicar filtros</button>
+      <a class="ghost-link" href="{{ url_for('admin.dashboard') }}">Limpar</a>
+    </div>
+  </form>
+</section>
+
+{% if plan_type_filter or selected_submission_id or sender_query or date_from or date_to %}
+  <section class="surface-card scope-card">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Filtros ativos</p>
+        <h2>Escopo de consulta atual</h2>
+        <p class="helper-text">
+          Tipo: {{ plan_type_filter or "Todos" }} |
+          Protocolo: {{ selected_submission_id or "Todos" }} |
+          Busca: {{ sender_query or "Sem filtro" }} |
+          Periodo: {{ date_from or "-" }} ate {{ date_to or "-" }}
+        </p>
+      </div>
+    </div>
+  </section>
+{% endif %}
+
+{% if selected_submission %}
+  <section class="surface-card scope-card">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Escopo atual</p>
+        <h2>Lote {{ selected_submission.submission_id }}</h2>
+        <p class="helper-text">
+          {{ selected_submission.file_count }} arquivo(s), {{ selected_submission.total_size_bytes|filesize }},
+          remetente {{ selected_submission.sender_name or selected_submission.sender_email or "-" }}.
+        </p>
+      </div>
+      <form action="{{ url_for('admin.delete_submission_route', submission_id=selected_submission.submission_id) }}" method="post" class="inline-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="plan_type_filter" value="{{ plan_type_filter }}">
+        <input type="hidden" name="sender_query" value="{{ sender_query }}">
+        <input type="hidden" name="date_from" value="{{ date_from }}">
+        <input type="hidden" name="date_to" value="{{ date_to }}">
+        <button type="submit" class="danger-button" onclick="return confirm('Excluir todo este lote e seus arquivos?')">Excluir lote</button>
+      </form>
+    </div>
+  </section>
+{% endif %}
+
+<section class="admin-grid">
+  <article class="surface-card">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Consolidacao</p>
+        <h2>Gerar arquivos por tipo</h2>
+      </div>
+      <span class="badge badge-neutral">{{ "Duplicidade ativa" if block_duplicate_files else "Duplicidade livre" }}</span>
+    </div>
+
+    <div class="admin-plan-grid">
+      <form action="{{ url_for('admin.consolidate') }}" method="post" class="surface-subcard">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="plan_type" value="saude">
+        <input type="hidden" name="plan_type_filter" value="{{ plan_type_filter }}">
+        <input type="hidden" name="submission_id" value="{{ selected_submission_id }}">
+        <input type="hidden" name="sender_query" value="{{ sender_query }}">
+        <input type="hidden" name="date_from" value="{{ date_from }}">
+        <input type="hidden" name="date_to" value="{{ date_to }}">
+        <p class="eyebrow">Saude</p>
+        <h3>Consolidado Saude</h3>
+        <p class="helper-text">Base: {{ "planilha de Saude carregada" if health_template_available else "sem base encontrada, usando primeira valida" }}</p>
+        {% if selected_submission_id %}
+          <p class="helper-text">Escopo atual: somente arquivos do protocolo {{ selected_submission_id }}.</p>
+        {% endif %}
+        <label>
+          Aba a consolidar
+          <input type="text" name="sheet_name" placeholder="Primeira aba do arquivo" value="{{ default_sheet_name }}">
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" name="remove_duplicates">
+          <span>Remover linhas duplicadas</span>
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" name="ignore_empty" checked>
+          <span>Ignorar linhas totalmente vazias</span>
+        </label>
+        <div class="form-actions">
+          <button type="submit">Gerar Saude</button>
+        </div>
+      </form>
+
+      <form action="{{ url_for('admin.consolidate') }}" method="post" class="surface-subcard">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="plan_type" value="odonto">
+        <input type="hidden" name="plan_type_filter" value="{{ plan_type_filter }}">
+        <input type="hidden" name="submission_id" value="{{ selected_submission_id }}">
+        <input type="hidden" name="sender_query" value="{{ sender_query }}">
+        <input type="hidden" name="date_from" value="{{ date_from }}">
+        <input type="hidden" name="date_to" value="{{ date_to }}">
+        <p class="eyebrow">Odonto</p>
+        <h3>Consolidado Odonto</h3>
+        <p class="helper-text">Base: {{ "planilha de Odonto carregada" if dental_template_available else "sem base encontrada, usando primeira valida" }}</p>
+        {% if selected_submission_id %}
+          <p class="helper-text">Escopo atual: somente arquivos do protocolo {{ selected_submission_id }}.</p>
+        {% endif %}
+        <label>
+          Aba a consolidar
+          <input type="text" name="sheet_name" placeholder="Primeira aba do arquivo" value="{{ default_sheet_name }}">
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" name="remove_duplicates">
+          <span>Remover linhas duplicadas</span>
+        </label>
+        <label class="toggle-row">
+          <input type="checkbox" name="ignore_empty" checked>
+          <span>Ignorar linhas totalmente vazias</span>
+        </label>
+        <div class="form-actions">
+          <button type="submit">Gerar Odonto</button>
+        </div>
+      </form>
+    </div>
+  </article>
+
+  <article class="surface-card">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Historico</p>
+        <h2>Saidas recentes</h2>
+      </div>
+    </div>
+
+    {% if recent_outputs %}
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Quando</th>
+              <th>Tipo</th>
+              <th>Escopo</th>
+              <th>Arquivo</th>
+              <th>Linhas</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in recent_outputs %}
+              <tr>
+                <td>{{ item.created_at }}</td>
+                <td>{{ item.plan_label }}</td>
+                <td>{{ item.scope_label }}</td>
+                <td>{{ item.output_name }}</td>
+                <td>{{ item.rows_generated }}</td>
+                <td>{{ item.valid_files }} validos / {{ item.invalid_files }} inconsistentes</td>
+                <td><a href="{{ url_for('admin.download_output', consolidation_id=item.id) }}">Baixar</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="empty-state">Nenhum consolidado foi gerado ainda.</p>
+    {% endif %}
+  </article>
+</section>
+
+<section class="admin-grid">
+  <article class="surface-card">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Submissoes recentes</p>
+        <h2>Lotes recebidos</h2>
+      </div>
+    </div>
+    {% if recent_submissions %}
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Protocolo</th>
+              <th>Remetente</th>
+              <th>Tipos</th>
+              <th>Arquivos</th>
+              <th>Tamanho</th>
+              <th>Observacao</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in recent_submissions %}
+              <tr>
+                <td>{{ item.submitted_at }}</td>
+                <td>{{ item.submission_id }}</td>
+                <td>{{ item.sender_name or item.sender_email or "-" }}</td>
+                <td>{{ item.categories_summary }}</td>
+                <td>{{ item.file_count }}</td>
+                <td>{{ item.total_size_bytes|filesize }}</td>
+                <td>{{ item.note or "-" }}</td>
+                <td>
+                  <div class="table-actions">
+                    <a href="{{ url_for('admin.dashboard', submission_id=item.submission_id, plan_type_filter=plan_type_filter, sender_query=sender_query, date_from=date_from, date_to=date_to) }}">Filtrar</a>
+                    <form action="{{ url_for('admin.delete_submission_route', submission_id=item.submission_id) }}" method="post" class="inline-form">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="plan_type_filter" value="{{ plan_type_filter }}">
+                      <input type="hidden" name="sender_query" value="{{ sender_query }}">
+                      <input type="hidden" name="date_from" value="{{ date_from }}">
+                      <input type="hidden" name="date_to" value="{{ date_to }}">
+                      <button type="submit" class="table-button table-button-danger" onclick="return confirm('Excluir todo este lote?')">Excluir</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="empty-state">Nenhum lote recebido ainda.</p>
+    {% endif %}
+  </article>
+
+  <article class="surface-card">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Auditoria simples</p>
+        <h2>Eventos recentes</h2>
+      </div>
+    </div>
+    {% if recent_audit_logs %}
+      <ul class="audit-list">
+        {% for item in recent_audit_logs %}
+          <li>
+            <strong>{{ item.event_type }}</strong>
+            <span>{{ item.created_at }}{% if item.remote_addr %} • {{ item.remote_addr }}{% endif %}</span>
+            <p>{{ item.details or "-" }}</p>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty-state">Nenhum evento registrado ainda.</p>
+    {% endif %}
+  </article>
+</section>
+
+<section class="surface-card">
+  <div class="panel-heading">
+    <div>
+      <p class="eyebrow">Arquivos recebidos</p>
+      <h2>Ultimos uploads</h2>
+    </div>
+    {% if recent_files %}
+      <form id="bulk-delete-uploads" action="{{ url_for('admin.delete_selected_uploads_route') }}" method="post" class="inline-form bulk-actions">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="plan_type_filter" value="{{ plan_type_filter }}">
+        <input type="hidden" name="submission_id" value="{{ selected_submission_id }}">
+        <input type="hidden" name="sender_query" value="{{ sender_query }}">
+        <input type="hidden" name="date_from" value="{{ date_from }}">
+        <input type="hidden" name="date_to" value="{{ date_to }}">
+        <button type="submit" class="danger-button" onclick="return confirm('Excluir os arquivos selecionados?')">Excluir selecionados</button>
+      </form>
+    {% endif %}
+  </div>
+
+  {% if recent_files %}
+    <div class="table-wrapper" data-selectable-table>
+      <table>
+        <thead>
+            <tr>
+              <th><input type="checkbox" data-select-all aria-label="Selecionar todos"></th>
+              <th>Quando</th>
+              <th>Tipo</th>
+              <th>Protocolo</th>
+              <th>Remetente</th>
+              <th>Arquivo</th>
+            <th>Tamanho</th>
+            <th>Hash</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in recent_files %}
+            <tr>
+              <td><input type="checkbox" name="upload_ids" value="{{ item.id }}" form="bulk-delete-uploads" data-select-item aria-label="Selecionar {{ item.original_name }}"></td>
+              <td>{{ item.submitted_at }}</td>
+              <td>{{ item.plan_label }}</td>
+              <td>{{ item.submission_id }}</td>
+              <td>{{ item.sender_name or item.sender_email or "-" }}</td>
+              <td>{{ item.original_name }}</td>
+              <td>{{ item.size_bytes|filesize }}</td>
+              <td>{{ item.file_hash[:12] ~ "..." if item.file_hash else "-" }}</td>
+              <td>
+                <div class="table-actions">
+                  <a href="{{ url_for('admin.download_upload', upload_id=item.id) }}">Baixar</a>
+                  <form action="{{ url_for('admin.delete_upload_route', upload_id=item.id) }}" method="post" class="inline-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="plan_type_filter" value="{{ plan_type_filter }}">
+                    <input type="hidden" name="submission_id" value="{{ selected_submission_id }}">
+                    <input type="hidden" name="sender_query" value="{{ sender_query }}">
+                    <input type="hidden" name="date_from" value="{{ date_from }}">
+                    <input type="hidden" name="date_to" value="{{ date_to }}">
+                    <button type="submit" class="table-button table-button-danger" onclick="return confirm('Excluir este arquivo?')">Excluir</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty-state">Nenhum arquivo recebido ainda.</p>
+  {% endif %}
+</section>
+{% endblock %}

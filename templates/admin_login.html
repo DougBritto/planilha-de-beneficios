@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card small-card">
+  <h2>Área administrativa</h2>
+  <form action="{{ url_for('admin_login_post') }}" method="post" class="stack">
+    <label>
+      Senha
+      <input type="password" name="password" placeholder="Digite a senha" required>
+    </label>
+    <button type="submit">Entrar</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,38 @@
+<section class="surface-card toolbar-card">
+  <div class="panel-heading">
+    <div>
+      <p class="eyebrow">Operacao assistida</p>
+      <h2>Filtrar e organizar o painel</h2>
+    </div>
+  </div>
+  <form action="{{ filter_action }}" method="get" class="form-grid compact-form">
+    <label>
+      Tipo
+      <select name="plan_type_filter">
+        <option value="" {{ "selected" if not plan_type_filter else "" }}>Todos</option>
+        <option value="saude" {{ "selected" if plan_type_filter == "saude" else "" }}>Saude</option>
+        <option value="odonto" {{ "selected" if plan_type_filter == "odonto" else "" }}>Odonto</option>
+      </select>
+    </label>
+    <label>
+      Protocolo
+      <input type="text" name="submission_id" value="{{ selected_submission_id }}" placeholder="Ex.: a7cf9bc1bd">
+    </label>
+    <label>
+      Remetente ou arquivo
+      <input type="text" name="sender_query" value="{{ sender_query }}" placeholder="Nome, e-mail ou arquivo">
+    </label>
+    <label>
+      De
+      <input type="date" name="date_from" value="{{ date_from }}">
+    </label>
+    <label>
+      Ate
+      <input type="date" name="date_to" value="{{ date_to }}">
+    </label>
+    <div class="form-actions">
+      <button type="submit">Aplicar filtros</button>
+      <a class="ghost-link" href="{{ filter_action }}">Limpar</a>
+    </div>
+  </form>
+</section>

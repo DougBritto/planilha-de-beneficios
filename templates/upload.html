@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h2>Enviar planilhas</h2>
+  <p>Use esta página para receber arquivos de várias pessoas. Os formatos aceitos são <strong>.xlsx</strong>, <strong>.xlsm</strong>, <strong>.xls</strong> e <strong>.csv</strong>.</p>
+
+  <form action="{{ url_for('upload_files') }}" method="post" enctype="multipart/form-data" class="form-grid">
+    <label>
+      Nome
+      <input type="text" name="sender_name" placeholder="Quem está enviando">
+    </label>
+    <label>
+      E-mail
+      <input type="email" name="sender_email" placeholder="email@empresa.com">
+    </label>
+    <label class="full-width">
+      Observação
+      <textarea name="note" rows="3" placeholder="Opcional"></textarea>
+    </label>
+    <label class="full-width upload-box">
+      Arquivos
+      <input type="file" name="files" accept=".xlsx,.xls,.xlsm,.csv" multiple required>
+      <span>Selecione um ou mais arquivos</span>
+    </label>
+    <div class="full-width actions">
+      <button type="submit">Enviar arquivos</button>
+    </div>
+  </form>
+</section>
+
+<section class="card muted-card">
+  <h3>Como funciona</h3>
+  <ol>
+    <li>Você envia este link para outras pessoas.</li>
+    <li>Elas fazem upload das planilhas aqui.</li>
+    <li>Na área <strong>Admin</strong>, você vê tudo que chegou e baixa o consolidado.</li>
+  </ol>
+</section>
+{% endblock %}

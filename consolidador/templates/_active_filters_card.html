@@ -1,0 +1,16 @@
+{% if plan_type_filter or selected_submission_id or sender_query or date_from or date_to %}
+  <section class="surface-card scope-card">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Filtros ativos</p>
+        <h2>Escopo de consulta atual</h2>
+        <p class="helper-text">
+          Tipo: {{ plan_type_filter or "Todos" }} |
+          Protocolo: {{ selected_submission_id or "Todos" }} |
+          Busca: {{ sender_query or "Sem filtro" }} |
+          Periodo: {{ date_from or "-" }} ate {{ date_to or "-" }}
+        </p>
+      </div>
+    </div>
+  </section>
+{% endif %}

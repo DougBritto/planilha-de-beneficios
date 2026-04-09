@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: consolidador-planilhas
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    disk:
+      name: consolidador-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: DATA_DIR
+        value: /var/data
+      - key: SESSION_COOKIE_SECURE
+        value: true
+      - key: INCLUDE_SOURCE_COLUMNS
+        value: true
+      - key: MAX_FILES_PER_UPLOAD
+        value: 20
+      - key: BLOCK_DUPLICATE_FILES
+        value: false

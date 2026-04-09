@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="toolbar">
+    <div>
+      <h2>Painel administrativo</h2>
+      <p>{{ total_submissions }} submissão(ões) • {{ total_files }} arquivo(s)</p>
+    </div>
+    <a class="secondary-link" href="{{ url_for('admin_logout') }}">Sair</a>
+  </div>
+
+  <form action="{{ url_for('consolidate_route') }}" method="post" class="form-grid compact-grid">
+    <label>
+      Aba a usar
+      <input type="text" name="sheet_name" placeholder="Primeira aba" value="{{ default_sheet_name }}">
+    </label>
+    <label class="checkbox-row">
+      <input type="checkbox" name="remove_duplicates">
+      Remover duplicados
+    </label>
+    <label class="checkbox-row">
+      <input type="checkbox" name="ignore_empty" checked>
+      Ignorar linhas vazias
+    </label>
+    <div class="actions align-end">
+      <button type="submit">Gerar consolidado.xlsx</button>
+    </div>
+  </form>
+</section>
+
+<section class="card">
+  <h3>Arquivos recebidos</h3>
+  {% if files %}
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Quando</th>
+          <th>Submissão</th>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>Arquivo</th>
+          <th>Tamanho</th>
+          <th>Observação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in files %}
+        <tr>
+          <td>{{ item.submitted_at }}</td>
+          <td>{{ item.submission_id }}</td>
+          <td>{{ item.sender_name or '-' }}</td>
+          <td>{{ item.sender_email or '-' }}</td>
+          <td>{{ item.original_name }}</td>
+          <td>{{ item.size_bytes|filesize }}</td>
+          <td>{{ item.note or '-' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p>Nenhum arquivo recebido ainda.</p>
+  {% endif %}
+</section>
+{% endblock %}

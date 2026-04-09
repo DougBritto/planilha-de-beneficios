@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="login-layout">
+  <article class="surface-card login-copy">
+    <p class="eyebrow">Area protegida</p>
+    <h1>Painel administrativo</h1>
+    <p class="lead">
+      Entre com a senha do ambiente para acessar os uploads recebidos, gerar consolidacoes e acompanhar o historico operacional.
+    </p>
+    <div class="mini-grid">
+      <div>
+        <strong>Seguranca</strong>
+        <span>Cookie seguro, CSRF, expiracao por inatividade e bloqueio por tentativas repetidas</span>
+      </div>
+      <div>
+        <strong>Operacao</strong>
+        <span>Download individual, historico de saidas e rastreabilidade por lote</span>
+      </div>
+    </div>
+  </article>
+
+  <section class="surface-card login-card">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Autenticacao</p>
+        <h2>Entrar</h2>
+      </div>
+      <span class="badge">Admin</span>
+    </div>
+    <form action="{{ url_for('admin.login_post') }}" method="post" class="stack-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>
+        Senha
+        <input type="password" name="password" autocomplete="current-password" placeholder="Digite a senha administrativa" required>
+      </label>
+      <button type="submit">Acessar painel</button>
+    </form>
+  </section>
+</section>
+{% endblock %}

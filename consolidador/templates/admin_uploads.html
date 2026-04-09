@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+{% set admin_page_title = "Arquivos recebidos" %}
+{% set admin_page_lead = "Revise uploads, baixe planilhas e limpe a base de recebimentos sem sair do contexto atual do admin." %}
+{% include "_admin_page_header.html" %}
+
+{% set filter_action = url_for('admin.uploads_page') %}
+{% include "_admin_filters.html" %}
+{% include "_active_filters_card.html" %}
+{% include "_selected_submission_card.html" %}
+
+<section class="surface-card">
+  <div class="panel-heading">
+    <div>
+      <p class="eyebrow">Arquivos recebidos</p>
+      <h2>Ultimos uploads</h2>
+      <p class="helper-text">Os filtros aplicados aqui seguem o mesmo escopo do painel administrativo.</p>
+    </div>
+    {% if recent_files %}
+      <form id="bulk-delete-uploads" action="{{ url_for('admin.delete_selected_uploads_route') }}" method="post" class="inline-form bulk-actions">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="plan_type_filter" value="{{ plan_type_filter }}">
+        <input type="hidden" name="submission_id" value="{{ selected_submission_id }}">
+        <input type="hidden" name="sender_query" value="{{ sender_query }}">
+        <input type="hidden" name="date_from" value="{{ date_from }}">
+        <input type="hidden" name="date_to" value="{{ date_to }}">
+        <input type="hidden" name="return_view" value="uploads">
+        <button type="submit" class="danger-button" onclick="return confirm('Excluir os arquivos selecionados?')">Excluir selecionados</button>
+      </form>
+    {% endif %}
+  </div>
+
+  {% if recent_files %}
+    <div class="table-wrapper" data-selectable-table>
+      <table>
+        <thead>
+          <tr>
+            <th><input type="checkbox" data-select-all aria-label="Selecionar todos"></th>
+            <th>Quando</th>
+            <th>Tipo</th>
+            <th>Protocolo</th>
+            <th>Remetente</th>
+            <th>Arquivo</th>
+            <th>Tamanho</th>
+            <th>Hash</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in recent_files %}
+            <tr>
+              <td><input type="checkbox" name="upload_ids" value="{{ item.id }}" form="bulk-delete-uploads" data-select-item aria-label="Selecionar {{ item.original_name }}"></td>
+              <td>{{ item.submitted_at }}</td>
+              <td>{{ item.plan_label }}</td>
+              <td>{{ item.submission_id }}</td>
+              <td>{{ item.sender_name or (item.sender_email|mask_email) or "-" }}</td>
+              <td>{{ item.original_name }}</td>
+              <td>{{ item.size_bytes|filesize }}</td>
+              <td>{{ item.file_hash[:12] ~ "..." if item.file_hash else "-" }}</td>
+              <td>
+                <div class="table-actions">
+                  <a href="{{ url_for('admin.download_upload', upload_id=item.id) }}">Baixar</a>
+                  <form action="{{ url_for('admin.delete_upload_route', upload_id=item.id) }}" method="post" class="inline-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="plan_type_filter" value="{{ plan_type_filter }}">
+                    <input type="hidden" name="submission_id" value="{{ selected_submission_id }}">
+                    <input type="hidden" name="sender_query" value="{{ sender_query }}">
+                    <input type="hidden" name="date_from" value="{{ date_from }}">
+                    <input type="hidden" name="date_to" value="{{ date_to }}">
+                    <input type="hidden" name="return_view" value="uploads">
+                    <button type="submit" class="table-button table-button-danger" onclick="return confirm('Excluir este arquivo?')">Excluir</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty-state">Nenhum arquivo recebido ainda para este recorte.</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-grid">
+  <div class="hero-card hero-copy">
+    <p class="eyebrow">Recebimento centralizado</p>
+    <h1>Envie planilhas de Saude e Odonto em campos separados.</h1>
+    <p class="lead">
+      Cada grupo de arquivos segue sua propria base. Os envios de Saude alimentam o consolidado de Saude, e os de Odonto alimentam o consolidado de Odonto.
+    </p>
+
+    <div class="hero-points">
+      <article>
+        <strong>Formatos aceitos</strong>
+        <span>{{ ACCEPTED_FORMATS }}</span>
+      </article>
+      <article>
+        <strong>Planilhas-base</strong>
+        <span>Saude: {{ "carregada" if HEALTH_TEMPLATE_AVAILABLE else "nao encontrada" }} | Odonto: {{ "carregada" if DENTAL_TEMPLATE_AVAILABLE else "nao encontrada" }}</span>
+      </article>
+      <article>
+        <strong>Limite por envio</strong>
+        <span>Ate {{ MAX_FILES_PER_UPLOAD }} arquivo(s) e {{ MAX_UPLOAD_MB }} MB por requisicao</span>
+      </article>
+    </div>
+  </div>
+
+  <section class="hero-card upload-panel">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Formulario publico</p>
+        <h2>Novo envio</h2>
+      </div>
+      <span class="badge badge-neutral">Link compartilhavel</span>
+    </div>
+
+    <form action="{{ url_for('public.upload') }}" method="post" enctype="multipart/form-data" class="form-grid" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <label>
+        Nome
+        <input type="text" name="sender_name" maxlength="120" placeholder="Quem esta enviando">
+      </label>
+
+      <label>
+        E-mail
+        <input type="email" name="sender_email" maxlength="180" placeholder="email@empresa.com">
+      </label>
+
+      <label class="full-span">
+        Observacao
+        <textarea name="note" rows="3" maxlength="1000" placeholder="Informacao adicional opcional"></textarea>
+      </label>
+
+      <div class="full-span upload-types-grid">
+        <label class="upload-dropzone plan-saude">
+          <span>Campo Saude</span>
+          <input id="file-input-saude" type="file" name="files_saude" accept=".xlsx,.xls,.xlsm,.csv" multiple data-file-input="saude">
+          <strong>Arraste ou selecione arquivos de Saude</strong>
+          <small>Esses arquivos entram apenas no consolidado de Saude.</small>
+          <div class="selected-files" data-file-list="saude">Nenhum arquivo de Saude selecionado.</div>
+        </label>
+
+        <label class="upload-dropzone plan-odonto">
+          <span>Campo Odonto</span>
+          <input id="file-input-odonto" type="file" name="files_odonto" accept=".xlsx,.xls,.xlsm,.csv" multiple data-file-input="odonto">
+          <strong>Arraste ou selecione arquivos de Odonto</strong>
+          <small>Esses arquivos entram apenas no consolidado de Odonto.</small>
+          <div class="selected-files" data-file-list="odonto">Nenhum arquivo de Odonto selecionado.</div>
+        </label>
+      </div>
+
+      <div class="full-span form-actions">
+        <button type="submit">Enviar arquivos</button>
+        <p class="helper-text">Voce pode enviar apenas Saude, apenas Odonto ou os dois no mesmo protocolo.</p>
+      </div>
+    </form>
+  </section>
+</section>
+
+<section class="info-grid">
+  <article class="surface-card">
+    <p class="eyebrow">Fluxo</p>
+    <h3>Como o sistema trata cada envio</h3>
+    <ol class="steps-list">
+      <li>O lote e salvo com metadados do remetente e horario.</li>
+      <li>Saude e Odonto sao validados separadamente com base em suas planilhas-base.</li>
+      <li>Arquivos divergentes ficam fora do consolidado correspondente e entram em inconsistencias.</li>
+    </ol>
+  </article>
+
+  <article class="surface-card">
+    <p class="eyebrow">Boas praticas</p>
+    <h3>Antes de enviar</h3>
+    <ul class="check-list">
+      <li>Use o campo correto: Saude para Saude e Odonto para Odonto.</li>
+      <li>Confirme se os cabecalhos seguem a mesma ordem da planilha-base do tipo correspondente.</li>
+      <li>Se precisar, informe observacoes para facilitar a analise do administrador.</li>
+    </ul>
+  </article>
+</section>
+{% endblock %}
